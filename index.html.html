@@ -1,0 +1,836 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<meta name="description" content="Electric duct heater sizing and T&C calculator">
+<title>Electric Heater Calculator v3</title>
+<style>
+:root{
+  --bg:#f4f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#dbe4ef;
+  --blue:#2563eb;--cyan:#0ea5e9;--warm:#b45309;
+  --ok-bg:#dcfce7;--ok-fg:#166534;--warn-bg:#fef3c7;--warn-fg:#92400e;--bad-bg:#fee2e2;--bad-fg:#991b1b;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:linear-gradient(#eaf1ff,#f8fafc 280px);color:var(--text)}
+.wrap{max-width:1140px;margin:auto;padding:18px 14px 40px}
+.hero{background:linear-gradient(135deg,#0f172a,#1d4ed8);color:#fff;padding:24px;border-radius:22px}
+h1{margin:0 0 6px;font-size:clamp(26px,5vw,40px)}
+.sub{color:#dbeafe;margin:0;font-size:15px}
+.hint{color:#bfdbfe;margin:10px 0 0;font-size:13px}
+.toolbar{display:flex;justify-content:flex-end;gap:8px;margin:12px 0;flex-wrap:wrap}
+button{border:0;border-radius:12px;padding:11px 14px;font-weight:800;cursor:pointer;font-family:inherit}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}
+.ghost{background:#fff;border:1px solid var(--line);color:var(--text)}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+.tab{background:#e2e8f0;color:#334155}
+.tab.active,.primary{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff}
+.grid{display:grid;grid-template-columns:1.05fr .95fr;gap:16px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 10px 30px rgba(15,23,42,.06)}
+h2{margin:0 0 6px;font-size:20px}
+h3{margin:0 0 12px;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.fields,.results{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{display:block;font-size:13px;font-weight:800;color:#475569;margin-bottom:6px}
+.iw{position:relative}
+.iw input,.iw select{width:100%;padding:12px 56px 12px 12px;border:1px solid #cbd5e1;border-radius:11px;font-size:16px;background:#fff;font-family:inherit;color:var(--text)}
+.iw input[readonly]{background:#f1f5f9;color:#334155}
+.iw select{padding-right:12px}
+.unit{position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none}
+.primary,.secondary{width:100%;margin-top:14px;font-size:16px}
+.secondary{background:#eef2ff;color:#3730a3}
+.section{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.result{padding:14px;border:1px solid var(--line);border-radius:14px;background:#fbfdff}
+.k{font-size:12px;color:var(--muted);font-weight:700}
+.v{font-size:26px;font-weight:900;margin-top:4px;line-height:1.15}
+.status{margin-top:12px;padding:13px;border-radius:12px;line-height:1.5;font-weight:800}
+.note{margin-top:12px;padding:13px;border-radius:12px;line-height:1.55;background:#eff6ff;color:#1e3a8a;border:1px solid #bfdbfe}
+.flags{margin-top:12px;display:grid;gap:8px}
+.flag{padding:11px 13px;border-radius:11px;font-size:14px;line-height:1.45;border:1px solid transparent}
+.flag.warn{background:var(--warn-bg);color:var(--warn-fg);border-color:#fde68a}
+.flag.bad{background:var(--bad-bg);color:var(--bad-fg);border-color:#fecaca}
+.flag.info{background:#f1f5f9;color:#334155;border-color:#e2e8f0}
+.formula{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#0f172a;color:#e2e8f0;padding:13px;border-radius:11px;font-size:13px;line-height:1.7}
+.hidden{display:none!important}
+.footer{text-align:center;color:var(--muted);font-size:13px;margin-top:22px}
+.mode-note{font-size:13px;color:var(--muted);margin:0 0 14px;line-height:1.5}
+.span2{grid-column:1/-1}
+.docgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.recgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+@media(max-width:1000px){.tabs{grid-template-columns:1fr 1fr}}
+@media(max-width:820px){.grid,.fields,.results,.docgrid,.recgrid{grid-template-columns:1fr}}
+#report{display:none}
+@media print{
+  @page{size:A4;margin:14mm}
+  body{background:#fff}
+  .hero,.toolbar,.tabs,.grid,.footer{display:none!important}
+  #report{display:block;font-size:11pt;color:#000}
+  #report h1{font-size:15pt;margin:0 0 2mm;letter-spacing:.02em}
+  .rdoc{font-size:10pt;border-bottom:1.2pt solid #000;padding-bottom:2.5mm;margin-bottom:4mm}
+  .rcols{display:grid;grid-template-columns:1fr 1fr;gap:8mm}
+  #report table{width:100%;border-collapse:collapse;font-size:10pt}
+  #report caption{text-align:left;font-weight:800;font-size:9pt;letter-spacing:.08em;text-transform:uppercase;padding-bottom:1.5mm;border-bottom:.6pt solid #000;margin-bottom:1.5mm}
+  #report td{padding:1.2mm 0;vertical-align:top}
+  #report td:first-child{color:#333}
+  #report td:last-child{text-align:right;font-weight:700;white-space:nowrap}
+  .rverdict{margin-top:5mm;padding:2.5mm 3mm;border:1.4pt solid #000;font-weight:900;font-size:12pt;letter-spacing:.04em}
+  .rnotes{margin-top:3mm;font-size:9.5pt;line-height:1.45}
+  .rnotes p{margin:0 0 1.5mm;padding-left:4mm;text-indent:-4mm}
+  .rsign{display:grid;grid-template-columns:1fr 1fr;gap:10mm;margin-top:12mm;font-size:10pt}
+  .rfoot{margin-top:6mm;padding-top:2mm;border-top:.6pt solid #999;font-size:8.5pt;color:#444}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<section class="hero">
+  <h1 data-en="Electric Heater Calculator" data-vi="Bộ tính Electric Heater">Electric Heater Calculator</h1>
+  <p class="sub" data-en="Duct heater sizing, outlet temperature, and T&amp;C verification in SI units." data-vi="Tính công suất heater ống gió, nhiệt độ đầu ra và nghiệm thu T&amp;C theo hệ SI.">Duct heater sizing, outlet temperature, and T&amp;C verification in SI units.</p>
+  <p class="hint" data-en="Single HTML file. Save it to your device to use without a network." data-vi="Chỉ một file HTML. Lưu về máy là dùng được khi không có mạng.">Single HTML file. Save it to your device to use without a network.</p>
+</section>
+
+<div class="toolbar">
+  <button id="printBtn" class="ghost" data-en="Print / Save as PDF" data-vi="In / Lưu PDF">Print / Save as PDF</button>
+  <button id="langBtn" class="ghost">VI</button>
+</div>
+
+<div class="tabs">
+  <button id="sizingTab" class="tab active" data-en="1. Heater sizing" data-vi="1. Công suất heater">1. Heater sizing</button>
+  <button id="temperatureTab" class="tab" data-en="2. Outlet temperature" data-vi="2. Nhiệt độ gió ra">2. Outlet temperature</button>
+  <button id="tcTab" class="tab" data-en="3. T&amp;C verification" data-vi="3. Nghiệm thu T&amp;C">3. T&amp;C verification</button>
+  <button id="airflowTab" class="tab" data-en="4. Airflow from heat" data-vi="4. Lưu lượng từ nhiệt">4. Airflow from heat</button>
+</div>
+
+<div class="grid">
+
+<!-- ================= INPUT CARD ================= -->
+<section class="card">
+  <h2 id="modeTitle">Heater sizing</h2>
+  <p id="modeNote" class="mode-note"></p>
+
+  <div class="fields">
+    <div id="airflowBox">
+      <label for="airflow" data-en="Airflow" data-vi="Lưu lượng gió">Airflow</label>
+      <div class="iw"><input id="airflow" type="number" value="5000" min="1" step="10"><span class="unit">m³/h</span></div>
+    </div>
+    <div>
+      <label for="measurePoint" data-en="Airflow measured at" data-vi="Vị trí đo lưu lượng">Airflow measured at</label>
+      <div class="iw"><select id="measurePoint">
+        <option value="inlet" data-en="Inlet (before heater)" data-vi="Đầu vào (trước heater)">Inlet (before heater)</option>
+        <option value="outlet" data-en="Outlet (after heater)" data-vi="Đầu ra (sau heater)">Outlet (after heater)</option>
+      </select></div>
+    </div>
+    <div>
+      <label for="tin" data-en="Inlet temperature" data-vi="Nhiệt độ gió vào">Inlet temperature</label>
+      <div class="iw"><input id="tin" type="number" value="15" step="0.1"><span class="unit">°C</span></div>
+    </div>
+    <div id="toutBox">
+      <label for="tout" data-en="Outlet temperature" data-vi="Nhiệt độ gió ra">Outlet temperature</label>
+      <div class="iw"><input id="tout" type="number" value="41" step="0.1"><span class="unit">°C</span></div>
+    </div>
+    <div id="powerBox" class="hidden">
+      <label for="power" data-en="Heater power" data-vi="Công suất heater">Heater power</label>
+      <div class="iw"><input id="power" type="number" value="44" min="0.1" step="0.1"><span class="unit">kW</span></div>
+    </div>
+    <div id="ratedBox" class="hidden">
+      <label for="rated" data-en="Rated heater power" data-vi="Công suất heater định mức">Rated heater power</label>
+      <div class="iw"><input id="rated" type="number" value="44" min="0.1" step="0.1"><span class="unit">kW</span></div>
+    </div>
+    <div id="marginBox">
+      <label for="margin" data-en="Design margin" data-vi="Hệ số dự phòng">Design margin</label>
+      <div class="iw"><input id="margin" type="number" value="10" min="0" max="50" step="1"><span class="unit">%</span></div>
+    </div>
+  </div>
+
+  <!-- Air properties -->
+  <div class="section">
+    <h3 data-en="Air properties" data-vi="Thông số không khí">Air properties</h3>
+    <div class="fields">
+      <div>
+        <label for="rhoMode" data-en="Density basis" data-vi="Cách lấy khối lượng riêng">Density basis</label>
+        <div class="iw"><select id="rhoMode">
+          <option value="auto" data-en="Auto from temperature" data-vi="Tự tính theo nhiệt độ">Auto from temperature</option>
+          <option value="manual" data-en="Enter manually" data-vi="Nhập tay">Enter manually</option>
+        </select></div>
+      </div>
+      <div id="patmBox">
+        <label for="patm" data-en="Barometric pressure" data-vi="Áp suất khí quyển">Barometric pressure</label>
+        <div class="iw"><input id="patm" type="number" value="101.3" step="0.1" min="50"><span class="unit">kPa</span></div>
+      </div>
+      <div id="rhoManualBox" class="hidden">
+        <label for="rhoManual" data-en="Air density" data-vi="Khối lượng riêng không khí">Air density</label>
+        <div class="iw"><input id="rhoManual" type="number" value="1.20" step="0.001" min="0.1"><span class="unit">kg/m³</span></div>
+      </div>
+      <div>
+        <label for="cp" data-en="Specific heat" data-vi="Nhiệt dung riêng">Specific heat</label>
+        <div class="iw"><input id="cp" type="number" value="1.006" step="0.001" min="0.1"><span class="unit">kJ/kg·K</span></div>
+      </div>
+      <div>
+        <label for="rhoUsed" data-en="Density used" data-vi="Khối lượng riêng dùng để tính">Density used</label>
+        <div class="iw"><input id="rhoUsed" readonly><span class="unit">kg/m³</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Electrical -->
+  <div class="section">
+    <h3 data-en="Electrical" data-vi="Thông số điện">Electrical</h3>
+    <div class="fields">
+      <div>
+        <label for="phases" data-en="Supply" data-vi="Nguồn cấp">Supply</label>
+        <div class="iw"><select id="phases">
+          <option value="3" data-en="3-phase" data-vi="3 pha">3-phase</option>
+          <option value="1" data-en="1-phase" data-vi="1 pha">1-phase</option>
+        </select></div>
+      </div>
+      <div>
+        <label for="voltage" data-en="Voltage" data-vi="Điện áp">Voltage</label>
+        <div class="iw"><input id="voltage" type="number" value="380" min="1" step="1"><span class="unit">V</span></div>
+      </div>
+      <div>
+        <label for="pf" data-en="Power factor" data-vi="Hệ số công suất">Power factor</label>
+        <div class="iw"><input id="pf" type="number" value="1" min="0.1" max="1" step="0.01"><span class="unit">cos φ</span></div>
+      </div>
+      <div id="currentBox" class="hidden">
+        <label for="currentMeas" data-en="Measured current (avg)" data-vi="Dòng điện đo được (trung bình)">Measured current (avg)</label>
+        <div class="iw"><input id="currentMeas" type="number" value="0" min="0" step="0.1"><span class="unit">A</span></div>
+      </div>
+      <div id="stagesBox" class="hidden">
+        <label for="stages" data-en="Heater stages" data-vi="Số cấp heater">Heater stages</label>
+        <div class="iw"><input id="stages" type="number" value="3" min="1" max="12" step="1"><span class="unit" data-en="steps" data-vi="cấp">steps</span></div>
+      </div>
+    </div>
+    <p class="mode-note" style="margin-top:12px" id="elecNote"></p>
+  </div>
+
+  <!-- Duct / face velocity -->
+  <div class="section">
+    <h3 data-en="Duct and face velocity" data-vi="Ống gió và vận tốc qua heater">Duct and face velocity</h3>
+    <div class="fields">
+      <div>
+        <label for="shape" data-en="Duct shape" data-vi="Hình dạng ống gió">Duct shape</label>
+        <div class="iw"><select id="shape">
+          <option value="rect" data-en="Rectangular" data-vi="Chữ nhật">Rectangular</option>
+          <option value="round" data-en="Round" data-vi="Tròn">Round</option>
+        </select></div>
+      </div>
+      <div id="widthBox">
+        <label for="width" data-en="Duct width (internal)" data-vi="Chiều rộng ống (lọt lòng)">Duct width (internal)</label>
+        <div class="iw"><input id="width" type="number" value="800" min="1" step="10"><span class="unit">mm</span></div>
+      </div>
+      <div id="heightBox">
+        <label for="height" data-en="Duct height (internal)" data-vi="Chiều cao ống (lọt lòng)">Duct height (internal)</label>
+        <div class="iw"><input id="height" type="number" value="350" min="1" step="10"><span class="unit">mm</span></div>
+      </div>
+      <div id="diameterBox" class="hidden">
+        <label for="diameter" data-en="Duct diameter (internal)" data-vi="Đường kính ống (lọt lòng)">Duct diameter (internal)</label>
+        <div class="iw"><input id="diameter" type="number" value="600" min="1" step="10"><span class="unit">mm</span></div>
+      </div>
+      <div>
+        <label for="faceVel" data-en="Face velocity at heater" data-vi="Vận tốc qua heater">Face velocity at heater</label>
+        <div class="iw"><input id="faceVel" readonly><span class="unit">m/s</span></div>
+      </div>
+      <div>
+        <label for="velocity" data-en="Measured velocity (optional)" data-vi="Vận tốc đo được (tùy chọn)">Measured velocity (optional)</label>
+        <div class="iw"><input id="velocity" type="number" value="5" step="0.1" min="0"><span class="unit">m/s</span></div>
+      </div>
+      <div>
+        <label for="calcAirflow" data-en="Airflow from velocity" data-vi="Lưu lượng từ vận tốc">Airflow from velocity</label>
+        <div class="iw"><input id="calcAirflow" readonly><span class="unit">m³/h</span></div>
+      </div>
+    </div>
+    <button id="useAirflow" class="secondary" data-en="Use this airflow" data-vi="Dùng lưu lượng này">Use this airflow</button>
+  </div>
+
+  <!-- Record -->
+  <div class="section">
+    <h3 data-en="Record details" data-vi="Thông tin hồ sơ">Record details</h3>
+    <div class="docgrid">
+      <div><label for="docProject" data-en="Project" data-vi="Dự án">Project</label><div class="iw"><input id="docProject" type="text" placeholder="—"></div></div>
+      <div><label for="docTag" data-en="Equipment tag" data-vi="Mã thiết bị">Equipment tag</label><div class="iw"><input id="docTag" type="text" placeholder="EH-01"></div></div>
+      <div><label for="docLoc" data-en="Location" data-vi="Vị trí">Location</label><div class="iw"><input id="docLoc" type="text" placeholder="—"></div></div>
+      <div><label for="docDate" data-en="Date" data-vi="Ngày">Date</label><div class="iw"><input id="docDate" type="date"></div></div>
+      <div><label for="docBy" data-en="Tested by" data-vi="Người thực hiện">Tested by</label><div class="iw"><input id="docBy" type="text" placeholder="—"></div></div>
+      <div><label for="docWit" data-en="Witnessed by" data-vi="Người chứng kiến">Witnessed by</label><div class="iw"><input id="docWit" type="text" placeholder="—"></div></div>
+    </div>
+  </div>
+
+  <button id="calculate" class="primary" data-en="Calculate" data-vi="Tính toán">Calculate</button>
+  <button id="swapBtn" class="secondary" data-en="Swap Tin / Tout" data-vi="Đổi Tin / Tout">Swap Tin / Tout</button>
+</section>
+
+<!-- ================= RESULT CARD ================= -->
+<section class="card">
+  <h2 data-en="Results" data-vi="Kết quả">Results</h2>
+
+  <div id="sizingResults" class="results">
+    <div class="result"><div class="k" data-en="Required heater power" data-vi="Công suất heater yêu cầu">Required heater power</div><div class="v" id="requiredPower">—</div></div>
+    <div class="result"><div class="k" data-en="With margin — select" data-vi="Kể cả dự phòng — nên chọn">With margin — select</div><div class="v" id="selectPower">—</div></div>
+    <div class="result"><div class="k" data-en="Temperature rise" data-vi="Độ tăng nhiệt">Temperature rise</div><div class="v" id="dt1">—</div></div>
+    <div class="result"><div class="k" data-en="Air mass flow" data-vi="Lưu lượng khối không khí">Air mass flow</div><div class="v" id="m1">—</div></div>
+    <div class="result"><div class="k" data-en="Full-load current" data-vi="Dòng điện định mức">Full-load current</div><div class="v" id="i1">—</div></div>
+    <div class="result"><div class="k" data-en="Face velocity" data-vi="Vận tốc qua heater">Face velocity</div><div class="v" id="fv1">—</div></div>
+  </div>
+
+  <div id="temperatureResults" class="results hidden">
+    <div class="result"><div class="k" data-en="Outlet temperature" data-vi="Nhiệt độ gió ra">Outlet temperature</div><div class="v" id="toutResult">—</div></div>
+    <div class="result"><div class="k" data-en="Temperature rise" data-vi="Độ tăng nhiệt">Temperature rise</div><div class="v" id="dt2">—</div></div>
+    <div class="result"><div class="k" data-en="Air mass flow" data-vi="Lưu lượng khối không khí">Air mass flow</div><div class="v" id="m2">—</div></div>
+    <div class="result"><div class="k" data-en="Full-load current" data-vi="Dòng điện định mức">Full-load current</div><div class="v" id="i2">—</div></div>
+    <div class="result"><div class="k" data-en="Face velocity" data-vi="Vận tốc qua heater">Face velocity</div><div class="v" id="fv2">—</div></div>
+    <div class="result"><div class="k" data-en="Heater power" data-vi="Công suất heater">Heater power</div><div class="v" id="p2">—</div></div>
+  </div>
+
+  <div id="tcResults" class="results hidden">
+    <div class="result"><div class="k" data-en="Thermal output (air side)" data-vi="Công suất nhiệt (phía gió)">Thermal output (air side)</div><div class="v" id="actual">—</div></div>
+    <div class="result"><div class="k" data-en="Thermal vs rated" data-vi="Nhiệt so với định mức">Thermal vs rated</div><div class="v" id="ratio">—</div></div>
+    <div class="result"><div class="k" data-en="Electrical input" data-vi="Công suất điện đo được">Electrical input</div><div class="v" id="pelec">—</div></div>
+    <div class="result"><div class="k" data-en="Electrical vs rated" data-vi="Điện so với định mức">Electrical vs rated</div><div class="v" id="elecRatio">—</div></div>
+    <div class="result"><div class="k" data-en="Heat balance (air / electrical)" data-vi="Cân bằng nhiệt (gió / điện)">Heat balance (air / electrical)</div><div class="v" id="balance">—</div></div>
+    <div class="result"><div class="k" data-en="Measured temperature rise" data-vi="Độ tăng nhiệt thực đo">Measured temperature rise</div><div class="v" id="dt3">—</div></div>
+  </div>
+
+  <div id="airflowResults" class="results hidden">
+    <div class="result"><div class="k" data-en="Airflow at inlet condition" data-vi="Lưu lượng ở điều kiện đầu vào">Airflow at inlet condition</div><div class="v" id="qIn">—</div></div>
+    <div class="result"><div class="k" data-en="Airflow at outlet condition" data-vi="Lưu lượng ở điều kiện đầu ra">Airflow at outlet condition</div><div class="v" id="qOut">—</div></div>
+    <div class="result"><div class="k" data-en="Air mass flow" data-vi="Lưu lượng khối không khí">Air mass flow</div><div class="v" id="m4">—</div></div>
+    <div class="result"><div class="k" data-en="Temperature rise" data-vi="Độ tăng nhiệt">Temperature rise</div><div class="v" id="dt4">—</div></div>
+    <div class="result"><div class="k" data-en="Face velocity" data-vi="Vận tốc qua heater">Face velocity</div><div class="v" id="fv4">—</div></div>
+    <div class="result"><div class="k" data-en="Error per ±0.5 °C" data-vi="Sai số ứng với ±0,5 °C">Error per ±0.5 °C</div><div class="v" id="sens4">—</div></div>
+  </div>
+
+  <div id="status" class="status"></div>
+  <div id="summary" class="note"></div>
+  <div id="flags" class="flags"></div>
+
+  <h2 style="margin-top:20px" data-en="Calculation basis" data-vi="Cơ sở tính toán">Calculation basis</h2>
+  <div class="formula">
+    ρ = P<sub>atm</sub> / (287.05 × (273.15 + T<sub>ref</sub>))<br>
+    ṁ = ρ × V̇ / 3600<br>
+    Q = ṁ × Cp × (T<sub>out</sub> − T<sub>in</sub>)<br>
+    P<sub>elec,3ph</sub> = √3 × U × I × cos φ / 1000
+  </div>
+  <div class="note" data-en="Sensible heat only, no duct heat loss or fan gain. T&amp;C readings should use a traverse-averaged velocity and sensors positioned clear of the element to avoid radiant error." data-vi="Chỉ tính nhiệt hiện, chưa kể tổn thất qua vỏ ống và nhiệt từ quạt. Khi T&amp;C nên đo vận tốc theo lưới điểm (traverse) và đặt cảm biến cách xa điện trở để tránh sai số bức xạ.">Sensible heat only.</div>
+</section>
+
+</div>
+
+<div class="footer">Developed by Trọng Ngọc • v3.0</div>
+
+<!-- ================= COMPACT PRINT REPORT ================= -->
+<section id="report">
+  <h1 id="rTitle"></h1>
+  <div id="rDoc" class="rdoc"></div>
+  <div class="rcols">
+    <table id="rInputs"></table>
+    <table id="rResults"></table>
+  </div>
+  <div id="rVerdict" class="rverdict"></div>
+  <div id="rNotes" class="rnotes"></div>
+  <div class="rsign">
+    <div><span id="rBy1"></span><br><br>______________________</div>
+    <div><span id="rBy2"></span><br><br>______________________</div>
+  </div>
+  <div id="rFoot" class="rfoot"></div>
+</section>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const R_AIR = 287.05;
+const STD_SIZES = [3,4.5,6,9,12,15,18,24,30,36,45,54,60,72,90,105,120,150,180];
+let lang = 'en', mode = 'sizing';
+const tr = (en, vi) => lang === 'en' ? en : vi;
+const num = id => { const v = parseFloat($(id).value); return Number.isFinite(v) ? v : NaN; };
+
+/* ---------- language & mode ---------- */
+function modeText(){
+  const t = {
+    sizing: tr('Heater sizing','Tính công suất heater'),
+    temperature: tr('Outlet temperature','Nhiệt độ gió ra'),
+    tc: tr('T&C verification','Nghiệm thu T&C'),
+    airflow: tr('Airflow from heat balance','Lưu lượng theo cân bằng nhiệt')
+  };
+  const n = {
+    sizing: tr('Enter airflow and the required inlet/outlet temperatures. Returns the heater power to specify.',
+               'Nhập lưu lượng và nhiệt độ vào/ra yêu cầu. Kết quả là công suất heater cần chọn.'),
+    temperature: tr('Enter airflow, inlet temperature and heater power. Returns the outlet temperature reached.',
+                    'Nhập lưu lượng, nhiệt độ vào và công suất heater. Kết quả là nhiệt độ gió ra đạt được.'),
+    tc: tr('Enter measured temperatures, measured current and the nameplate rating. Compares air-side heat against electrical input.',
+           'Nhập nhiệt độ đo được, dòng điện đo được và công suất trên nhãn. So sánh nhiệt phía gió với công suất điện.'),
+    airflow: tr('Enter heater power and the measured inlet/outlet temperatures. Returns the airflow the heater is actually seeing — useful when a duct traverse is not possible.',
+                'Nhập công suất heater và nhiệt độ vào/ra đo được. Kết quả là lưu lượng thực tế qua heater — dùng khi không đo traverse trong ống được.')
+  };
+  $('modeTitle').textContent = t[mode];
+  $('modeNote').textContent = n[mode];
+  $('elecNote').textContent = (mode === 'tc' || mode === 'airflow')
+    ? tr('Leave current at 0 to skip the electrical cross-check.','Để dòng điện = 0 nếu không đối chiếu phía điện.')
+    : tr('Used to size cable and protection for the selected heater.','Dùng để chọn cáp và thiết bị bảo vệ cho heater đã chọn.');
+}
+
+function setLanguage(){
+  document.querySelectorAll('[data-en]').forEach(el => { el.textContent = el.dataset[lang]; });
+  document.documentElement.lang = lang;
+  $('langBtn').textContent = lang === 'en' ? 'VI' : 'EN';
+  modeText();
+  calc();
+}
+
+function setMode(m){
+  mode = m;
+  ['sizing','temperature','tc','airflow'].forEach(x => $(x+'Tab').classList.toggle('active', x === m));
+  $('airflowBox').classList.toggle('hidden', m === 'airflow');
+  $('toutBox').classList.toggle('hidden', m === 'temperature');
+  $('powerBox').classList.toggle('hidden', !(m === 'temperature' || m === 'airflow'));
+  $('ratedBox').classList.toggle('hidden', m !== 'tc');
+  $('marginBox').classList.toggle('hidden', m !== 'sizing');
+  $('currentBox').classList.toggle('hidden', !(m === 'tc' || m === 'airflow'));
+  $('stagesBox').classList.toggle('hidden', m !== 'tc');
+  $('swapBtn').classList.toggle('hidden', m === 'temperature');
+  $('useAirflow').classList.toggle('hidden', m === 'airflow');
+  $('sizingResults').classList.toggle('hidden', m !== 'sizing');
+  $('temperatureResults').classList.toggle('hidden', m !== 'temperature');
+  $('tcResults').classList.toggle('hidden', m !== 'tc');
+  $('airflowResults').classList.toggle('hidden', m !== 'airflow');
+  modeText();
+  calc();
+}
+
+/* ---------- physics helpers ---------- */
+function densityAt(tC){
+  const p = num('patm');
+  if (!Number.isFinite(p) || p <= 0) return NaN;
+  return (p * 1000) / (R_AIR * (273.15 + tC));
+}
+
+function ductArea(){
+  if ($('shape').value === 'rect'){
+    const w = num('width'), h = num('height');
+    if (!(w > 0 && h > 0)) return NaN;
+    return (w/1000) * (h/1000);
+  }
+  const d = num('diameter');
+  if (!(d > 0)) return NaN;
+  return Math.PI * d * d / 4e6;
+}
+
+function updateDuct(){
+  const a = ductArea(), v = num('velocity'), q = num('airflow');
+  $('calcAirflow').value = (Number.isFinite(a) && Number.isFinite(v) && v > 0) ? (v * a * 3600).toFixed(0) : '';
+  const fv = (Number.isFinite(a) && a > 0 && Number.isFinite(q) && q > 0) ? q / (a * 3600) : NaN;
+  $('faceVel').value = Number.isFinite(fv) ? fv.toFixed(2) : '';
+  return fv;
+}
+
+function electricalPower(amps){
+  const u = num('voltage'), pf = num('pf'), ph = parseFloat($('phases').value);
+  if (!(u > 0 && pf > 0 && amps > 0)) return NaN;
+  return (ph === 3 ? Math.sqrt(3) : 1) * u * amps * pf / 1000;
+}
+
+function currentFor(kW){
+  const u = num('voltage'), pf = num('pf'), ph = parseFloat($('phases').value);
+  if (!(u > 0 && pf > 0 && kW > 0)) return NaN;
+  return kW * 1000 / ((ph === 3 ? Math.sqrt(3) : 1) * u * pf);
+}
+
+/* ---------- output helpers ---------- */
+function setStatus(kind, msg){
+  const map = {
+    ok:  ['var(--ok-bg)','var(--ok-fg)'],
+    warn:['var(--warn-bg)','var(--warn-fg)'],
+    bad: ['var(--bad-bg)','var(--bad-fg)']
+  };
+  $('status').style.background = map[kind][0];
+  $('status').style.color = map[kind][1];
+  $('status').textContent = msg;
+}
+
+function clearResults(){
+  ['requiredPower','selectPower','dt1','m1','i1','fv1',
+   'toutResult','dt2','m2','i2','fv2','p2',
+   'actual','ratio','pelec','elecRatio','balance','dt3',
+   'qIn','qOut','m4','dt4','fv4','sens4'].forEach(id => { $(id).textContent = '—'; });
+  $('summary').innerHTML = '';
+  $('flags').innerHTML = '';
+}
+
+function showFlags(list){
+  $('flags').innerHTML = list.map(f => `<div class="flag ${f[0]}">${f[1]}</div>`).join('');
+}
+
+function fail(msg){
+  clearResults();
+  $('rhoUsed').value = '';
+  setStatus('bad', msg);
+}
+
+function velocityFlags(fv, flags){
+  if (!Number.isFinite(fv)) return;
+  if (fv < 2.0){
+    flags.push(['bad', tr(
+      `Face velocity is ${fv.toFixed(2)} m/s. Below about 2.0 m/s the element can overheat and trip the high-limit thermostat. Increase airflow or enlarge the heater section.`,
+      `Vận tốc qua heater là ${fv.toFixed(2)} m/s. Dưới khoảng 2,0 m/s điện trở dễ quá nhiệt và làm nhảy rơ-le nhiệt giới hạn. Cần tăng lưu lượng hoặc mở rộng tiết diện lắp heater.`)]);
+  } else if (fv > 10){
+    flags.push(['warn', tr(
+      `Face velocity is ${fv.toFixed(2)} m/s, which is high. Check pressure drop and element support.`,
+      `Vận tốc qua heater là ${fv.toFixed(2)} m/s, khá cao. Cần kiểm tra tổn thất áp và giá đỡ điện trở.`)]);
+  }
+}
+
+function nextStandard(kW){
+  return STD_SIZES.find(s => s >= kW - 1e-9) || null;
+}
+
+/* ---------- main ---------- */
+function calc(){
+  const airflow = num('airflow'), tin = num('tin'), cp = num('cp');
+  const autoRho = $('rhoMode').value === 'auto';
+  const atOutlet = $('measurePoint').value === 'outlet';
+
+  if (mode !== 'airflow' && !(airflow > 0)) return fail(tr('Enter an airflow greater than zero.','Nhập lưu lượng gió lớn hơn 0.'));
+  if (!Number.isFinite(tin)) return fail(tr('Enter the inlet temperature.','Nhập nhiệt độ gió vào.'));
+  if (!(cp > 0)) return fail(tr('Enter a specific heat greater than zero.','Nhập nhiệt dung riêng lớn hơn 0.'));
+  if (!autoRho && !(num('rhoManual') > 0)) return fail(tr('Enter an air density greater than zero.','Nhập khối lượng riêng lớn hơn 0.'));
+  if (autoRho && !(num('patm') > 0)) return fail(tr('Enter a barometric pressure greater than zero.','Nhập áp suất khí quyển lớn hơn 0.'));
+
+  const rhoAt = t => autoRho ? densityAt(t) : num('rhoManual');
+  const fv = updateDuct();
+  const flags = [];
+
+  /* ---- MODE 1: sizing ---- */
+  if (mode === 'sizing'){
+    const tout = num('tout'), margin = num('margin');
+    if (!Number.isFinite(tout)) return fail(tr('Enter the outlet temperature.','Nhập nhiệt độ gió ra.'));
+    if (tout <= tin) return fail(tr('Outlet temperature must be above inlet temperature.','Nhiệt độ gió ra phải lớn hơn nhiệt độ gió vào.'));
+
+    const rho = rhoAt(atOutlet ? tout : tin);
+    $('rhoUsed').value = rho.toFixed(4);
+    const m = rho * airflow / 3600;
+    const dt = tout - tin;
+    const q = m * cp * dt;
+    const mg = Number.isFinite(margin) && margin >= 0 ? margin : 0;
+    const withMargin = q * (1 + mg/100);
+    const pick = nextStandard(withMargin);
+    const amps = currentFor(pick || withMargin);
+
+    $('requiredPower').textContent = q.toFixed(2) + ' kW';
+    $('selectPower').textContent = pick ? pick.toFixed(1) + ' kW' : withMargin.toFixed(2) + ' kW';
+    $('dt1').textContent = dt.toFixed(1) + ' °C';
+    $('m1').textContent = m.toFixed(3) + ' kg/s';
+    $('i1').textContent = Number.isFinite(amps) ? amps.toFixed(1) + ' A' : '—';
+    $('fv1').textContent = Number.isFinite(fv) ? fv.toFixed(2) + ' m/s' : '—';
+
+    setStatus('ok', tr('SIZING RESULT','KẾT QUẢ TÍNH CÔNG SUẤT'));
+    $('summary').innerHTML = tr(
+      `Heating <b>${airflow.toLocaleString('en-US')} m³/h</b> from <b>${tin.toFixed(1)}°C</b> to <b>${tout.toFixed(1)}°C</b> needs <b>${q.toFixed(2)} kW</b>. With a ${mg}% margin, select <b>${pick ? pick.toFixed(1) : withMargin.toFixed(2)} kW</b>.`,
+      `Gia nhiệt <b>${airflow.toLocaleString('vi-VN')} m³/h</b> từ <b>${tin.toFixed(1)}°C</b> lên <b>${tout.toFixed(1)}°C</b> cần <b>${q.toFixed(2)} kW</b>. Kể cả dự phòng ${mg}%, nên chọn <b>${pick ? pick.toFixed(1) : withMargin.toFixed(2)} kW</b>.`);
+
+    velocityFlags(fv, flags);
+    if (Number.isFinite(amps)) flags.push(['info', tr(
+      `Full-load current about ${amps.toFixed(1)} A. Size cable and protection to this value, not to the calculated duty.`,
+      `Dòng điện định mức khoảng ${amps.toFixed(1)} A. Chọn cáp và bảo vệ theo giá trị này, không theo công suất tính toán.`)]);
+    showFlags(flags);
+    return;
+  }
+
+  /* ---- MODE 2: outlet temperature ---- */
+  if (mode === 'temperature'){
+    const power = num('power');
+    if (!(power > 0)) return fail(tr('Enter a heater power greater than zero.','Nhập công suất heater lớn hơn 0.'));
+
+    // If airflow is measured downstream, density depends on the unknown outlet
+    // temperature, so iterate until it settles.
+    let to = tin, rho = rhoAt(tin), m = 0, dt = 0;
+    for (let i = 0; i < 40; i++){
+      rho = rhoAt(atOutlet ? to : tin);
+      if (!(rho > 0)) return fail(tr('Air density could not be resolved.','Không xác định được khối lượng riêng.'));
+      m = rho * airflow / 3600;
+      dt = power / (m * cp);
+      const next = tin + dt;
+      if (Math.abs(next - to) < 1e-6){ to = next; break; }
+      to = next;
+    }
+    $('rhoUsed').value = rho.toFixed(4);
+    const amps = currentFor(power);
+
+    $('toutResult').textContent = to.toFixed(1) + ' °C';
+    $('dt2').textContent = dt.toFixed(1) + ' °C';
+    $('m2').textContent = m.toFixed(3) + ' kg/s';
+    $('i2').textContent = Number.isFinite(amps) ? amps.toFixed(1) + ' A' : '—';
+    $('fv2').textContent = Number.isFinite(fv) ? fv.toFixed(2) + ' m/s' : '—';
+    $('p2').textContent = power.toFixed(2) + ' kW';
+
+    setStatus('ok', tr('OUTLET TEMPERATURE RESULT','KẾT QUẢ NHIỆT ĐỘ GIÓ RA'));
+    $('summary').innerHTML = tr(
+      `A <b>${power.toFixed(2)} kW</b> heater raises the air by <b>${dt.toFixed(1)}°C</b> to <b>${to.toFixed(1)}°C</b>.`,
+      `Heater <b>${power.toFixed(2)} kW</b> làm gió tăng <b>${dt.toFixed(1)}°C</b>, đạt <b>${to.toFixed(1)}°C</b>.`);
+
+    velocityFlags(fv, flags);
+    if (to > 60) flags.push(['warn', tr(
+      `Outlet reaches ${to.toFixed(1)}°C. Confirm the duct material, flexible connections and downstream components are rated for this.`,
+      `Nhiệt độ ra đạt ${to.toFixed(1)}°C. Cần xác nhận vật liệu ống, ống mềm và thiết bị phía sau chịu được mức này.`)]);
+    showFlags(flags);
+    return;
+  }
+
+  /* ---- MODE 4: airflow from heat balance ---- */
+  if (mode === 'airflow'){
+    const tout = num('tout'), power = num('power'), amps = num('currentMeas');
+    if (!(power > 0)) return fail(tr('Enter the heater power greater than zero.','Nhập công suất heater lớn hơn 0.'));
+    if (!Number.isFinite(tout)) return fail(tr('Enter the measured outlet temperature.','Nhập nhiệt độ gió ra đo được.'));
+    if (tout <= tin) return fail(tr('Outlet temperature must be above inlet temperature.','Nhiệt độ gió ra phải lớn hơn nhiệt độ gió vào.'));
+
+    const dt = tout - tin;
+    const m = power / (cp * dt);
+    const rhoIn = rhoAt(tin), rhoOut = rhoAt(tout);
+    const qIn = m * 3600 / rhoIn;
+    const qOut = m * 3600 / rhoOut;
+    const rhoRef = atOutlet ? rhoOut : rhoIn;
+    $('rhoUsed').value = rhoRef.toFixed(4);
+
+    const area = ductArea();
+    const qRef = atOutlet ? qOut : qIn;
+    const fvA = (Number.isFinite(area) && area > 0) ? qRef / (area * 3600) : NaN;
+    $('faceVel').value = Number.isFinite(fvA) ? fvA.toFixed(2) : '';
+    const sens = 0.5 / dt * 100;
+
+    $('qIn').textContent = Math.round(qIn).toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN') + ' m³/h';
+    $('qOut').textContent = Math.round(qOut).toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN') + ' m³/h';
+    $('m4').textContent = m.toFixed(3) + ' kg/s';
+    $('dt4').textContent = dt.toFixed(1) + ' °C';
+    $('fv4').textContent = Number.isFinite(fvA) ? fvA.toFixed(2) + ' m/s' : '—';
+    $('sens4').textContent = '± ' + sens.toFixed(1) + ' %';
+
+    setStatus('ok', tr('AIRFLOW FROM HEAT BALANCE','LƯU LƯỢNG THEO CÂN BẰNG NHIỆT'));
+    $('summary').innerHTML = tr(
+      `A <b>${power.toFixed(2)} kW</b> input producing a <b>${dt.toFixed(1)}°C</b> rise means the heater is passing <b>${Math.round(qIn).toLocaleString('en-US')} m³/h</b> measured at inlet condition.`,
+      `Công suất <b>${power.toFixed(2)} kW</b> làm gió tăng <b>${dt.toFixed(1)}°C</b>, tức lưu lượng qua heater là <b>${Math.round(qIn).toLocaleString('vi-VN')} m³/h</b> quy về điều kiện đầu vào.`);
+
+    velocityFlags(fvA, flags);
+
+    if (dt < 5) flags.push(['bad', tr(
+      `Temperature rise is only ${dt.toFixed(1)}°C. A ±0.5°C sensor error shifts the answer by ±${sens.toFixed(1)}%. Raise the heat input or accept the result as indicative only.`,
+      `Độ tăng nhiệt chỉ ${dt.toFixed(1)}°C. Sai số cảm biến ±0,5°C làm kết quả lệch ±${sens.toFixed(1)}%. Nên tăng công suất cấp vào, hoặc chỉ xem kết quả là tham khảo.`)]);
+    else if (dt < 10) flags.push(['warn', tr(
+      `Temperature rise is ${dt.toFixed(1)}°C, giving ±${sens.toFixed(1)}% sensitivity to a ±0.5°C sensor error. A rise above 10°C gives a firmer result.`,
+      `Độ tăng nhiệt ${dt.toFixed(1)}°C, tương ứng độ nhạy ±${sens.toFixed(1)}% với sai số cảm biến ±0,5°C. Độ tăng trên 10°C cho kết quả chắc chắn hơn.`)]);
+
+    const pE = electricalPower(amps);
+    if (Number.isFinite(pE)){
+      const qE = (pE / (cp * dt)) * 3600 / rhoIn;
+      flags.push(['info', tr(
+        `Using the measured electrical input of ${pE.toFixed(2)} kW instead of the entered power gives ${Math.round(qE).toLocaleString('en-US')} m³/h at inlet condition.`,
+        `Nếu dùng công suất điện đo được ${pE.toFixed(2)} kW thay cho công suất đã nhập, lưu lượng là ${Math.round(qE).toLocaleString('vi-VN')} m³/h quy về điều kiện đầu vào.`)]);
+    }
+
+    const vMeas = num('velocity');
+    if (Number.isFinite(area) && area > 0 && vMeas > 0){
+      const qMeas = vMeas * area * 3600;
+      const diff = (qRef - qMeas) / qMeas * 100;
+      flags.push([Math.abs(diff) > 15 ? 'warn' : 'info', tr(
+        `Heat balance gives ${diff >= 0 ? '+' : ''}${diff.toFixed(1)}% against the ${Math.round(qMeas).toLocaleString('en-US')} m³/h from the entered velocity.`,
+        `Cân bằng nhiệt cho kết quả lệch ${diff >= 0 ? '+' : ''}${diff.toFixed(1)}% so với ${Math.round(qMeas).toLocaleString('vi-VN')} m³/h tính từ vận tốc đã nhập.`)]);
+    }
+
+    flags.push(['info', tr(
+      'Volumetric airflow differs at each side of the heater because the air expands. Quote the figure at the condition your specification refers to.',
+      'Lưu lượng thể tích ở hai phía heater khác nhau do không khí giãn nở. Cần ghi rõ kết quả quy về điều kiện nào theo yêu cầu của hồ sơ.')]);
+
+    showFlags(flags);
+    return;
+  }
+
+  /* ---- MODE 3: T&C ---- */
+  const tout = num('tout'), rated = num('rated'), amps = num('currentMeas'), stages = num('stages');
+  if (!Number.isFinite(tout)) return fail(tr('Enter the measured outlet temperature.','Nhập nhiệt độ gió ra đo được.'));
+  if (!(rated > 0)) return fail(tr('Enter the rated heater power greater than zero.','Nhập công suất định mức lớn hơn 0.'));
+  if (tout <= tin) return fail(tr('Measured outlet must be above inlet. Check the sensors.','Nhiệt độ ra đo được phải lớn hơn nhiệt độ vào. Kiểm tra lại cảm biến.'));
+
+  const rho = rhoAt(atOutlet ? tout : tin);
+  $('rhoUsed').value = rho.toFixed(4);
+  const m = rho * airflow / 3600;
+  const dt = tout - tin;
+  const qAir = m * cp * dt;
+  const ratio = qAir / rated * 100;
+  const pElec = electricalPower(amps);
+  const elecRatio = Number.isFinite(pElec) ? pElec / rated * 100 : NaN;
+  const balance = Number.isFinite(pElec) ? qAir / pElec * 100 : NaN;
+
+  $('actual').textContent = qAir.toFixed(2) + ' kW';
+  $('ratio').textContent = ratio.toFixed(1) + ' %';
+  $('pelec').textContent = Number.isFinite(pElec) ? pElec.toFixed(2) + ' kW' : '—';
+  $('elecRatio').textContent = Number.isFinite(elecRatio) ? elecRatio.toFixed(1) + ' %' : '—';
+  $('balance').textContent = Number.isFinite(balance) ? balance.toFixed(1) + ' %' : '—';
+  $('dt3').textContent = dt.toFixed(1) + ' °C';
+
+  let kind = 'bad', msg = tr('FAIL','KHÔNG ĐẠT');
+  if (ratio >= 90 && ratio <= 110){ kind = 'ok'; msg = tr('PASS','ĐẠT'); }
+  else if (ratio >= 70 && ratio < 90){ kind = 'warn'; msg = tr('CHECK — output below rating','CẦN KIỂM TRA — công suất thấp hơn định mức'); }
+  else if (ratio > 110){ kind = 'warn'; msg = tr('CHECK — output above rating','CẦN KIỂM TRA — công suất vượt định mức'); }
+  setStatus(kind, msg);
+
+  $('summary').innerHTML = tr(
+    `Air-side heat is <b>${qAir.toFixed(2)} kW</b>, <b>${ratio.toFixed(1)}%</b> of the <b>${rated.toFixed(1)} kW</b> rating.`,
+    `Nhiệt phía gió là <b>${qAir.toFixed(2)} kW</b>, bằng <b>${ratio.toFixed(1)}%</b> so với định mức <b>${rated.toFixed(1)} kW</b>.`);
+
+  velocityFlags(fv, flags);
+
+  if (!Number.isFinite(pElec)){
+    flags.push(['info', tr(
+      'No current entered, so the result rests on the air-side reading alone. Enter measured current to confirm the heater is drawing full load.',
+      'Chưa nhập dòng điện nên kết quả chỉ dựa vào phép đo phía gió. Nhập dòng điện đo được để xác nhận heater có chạy đủ tải.')]);
+  } else {
+    const n = (Number.isFinite(stages) && stages >= 1) ? Math.round(stages) : 3;
+    const fracOut = Math.round((1 - elecRatio/100) * n);
+    if (elecRatio < 90 && fracOut >= 1 && Math.abs(elecRatio - (n - fracOut)/n*100) < 6){
+      flags.push(['bad', tr(
+        `Electrical input is ${elecRatio.toFixed(1)}% of rating, close to ${n - fracOut}/${n} of full load. Check for ${fracOut} unenergised stage(s), a failed contactor, a blown fuse or a lost phase.`,
+        `Công suất điện chỉ bằng ${elecRatio.toFixed(1)}% định mức, xấp xỉ ${n - fracOut}/${n} tải. Cần kiểm tra ${fracOut} cấp chưa đóng điện, contactor hỏng, đứt cầu chì hoặc mất pha.`)]);
+    } else if (elecRatio < 90){
+      flags.push(['warn', tr(
+        `Electrical input is ${elecRatio.toFixed(1)}% of rating. Check supply voltage, element resistance and stage control.`,
+        `Công suất điện bằng ${elecRatio.toFixed(1)}% định mức. Cần kiểm tra điện áp nguồn, điện trở phần tử và mạch điều khiển từng cấp.`)]);
+    }
+
+    if (Number.isFinite(balance)){
+      if (balance < 90) flags.push(['warn', tr(
+        `Air side accounts for only ${balance.toFixed(1)}% of the electrical input. Likely causes: airflow under-read, sensor placement, or duct heat loss.`,
+        `Phía gió chỉ nhận được ${balance.toFixed(1)}% công suất điện. Nguyên nhân thường gặp: đo thiếu lưu lượng, vị trí cảm biến chưa đúng, hoặc thất thoát nhiệt qua ống.`)]);
+      else if (balance > 110) flags.push(['warn', tr(
+        `Air side shows ${balance.toFixed(1)}% of the electrical input, which is not physically possible. Re-check the airflow measurement and the inlet sensor.`,
+        `Phía gió cho ${balance.toFixed(1)}% công suất điện — không thể đạt được về mặt vật lý. Cần đo lại lưu lượng và kiểm tra cảm biến đầu vào.`)]);
+      else flags.push(['info', tr(
+        `Heat balance ${balance.toFixed(1)}% — air-side and electrical readings agree.`,
+        `Cân bằng nhiệt ${balance.toFixed(1)}% — số liệu phía gió và phía điện khớp nhau.`)]);
+    }
+  }
+
+  if (ratio > 110) flags.push(['warn', tr(
+    'Output above rating usually means the airflow is over-read or the inlet sensor is picking up heat. Verify before accepting.',
+    'Công suất vượt định mức thường do đo dư lưu lượng hoặc cảm biến đầu vào bị ảnh hưởng nhiệt. Cần xác minh trước khi chấp nhận.')]);
+
+  showFlags(flags);
+}
+
+/* ---------- compact report ---------- */
+function esc(s){ return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function rows(t, arr){
+  return `<caption>${t}</caption>` + arr.map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('');
+}
+
+function inputRows(){
+  const a = [];
+  if (mode !== 'airflow') a.push([tr('Airflow','Lưu lượng'), $('airflow').value + ' m³/h']);
+  a.push([tr('Measured at','Vị trí đo'), $('measurePoint').selectedOptions[0].textContent]);
+  a.push([tr('Inlet temp.','Nhiệt độ vào'), $('tin').value + ' °C']);
+  if (mode !== 'temperature') a.push([tr('Outlet temp.','Nhiệt độ ra'), $('tout').value + ' °C']);
+  if (mode === 'temperature' || mode === 'airflow') a.push([tr('Heater power','Công suất heater'), $('power').value + ' kW']);
+  if (mode === 'sizing') a.push([tr('Design margin','Dự phòng'), $('margin').value + ' %']);
+  if (mode === 'tc') a.push([tr('Rated power','Công suất định mức'), $('rated').value + ' kW']);
+  if (mode === 'tc' || mode === 'airflow'){
+    const amp = parseFloat($('currentMeas').value);
+    if (amp > 0) a.push([tr('Voltage / current','Điện áp / dòng điện'),
+      `${$('voltage').value} V / ${amp} A`]);
+  }
+  if ($('faceVel').value) a.push([tr('Face velocity','Vận tốc qua heater'), $('faceVel').value + ' m/s']);
+  a.push([tr('Density used','ρ dùng để tính'), ($('rhoUsed').value || '—') + ' kg/m³']);
+  a.push(['Cp', $('cp').value + ' kJ/kg·K']);
+  return a;
+}
+
+function resultRows(){
+  const box = mode === 'sizing' ? $('sizingResults')
+            : mode === 'temperature' ? $('temperatureResults')
+            : mode === 'airflow' ? $('airflowResults') : $('tcResults');
+  return [...box.querySelectorAll('.result')]
+    .map(r => [r.querySelector('.k').textContent, r.querySelector('.v').textContent])
+    .filter(r => r[1] !== '—');
+}
+
+function buildReport(){
+  const titles = {
+    sizing: tr('ELECTRIC HEATER — SIZING CALCULATION','ELECTRIC HEATER — TÍNH CHỌN CÔNG SUẤT'),
+    temperature: tr('ELECTRIC HEATER — OUTLET TEMPERATURE CHECK','ELECTRIC HEATER — KIỂM TRA NHIỆT ĐỘ GIÓ RA'),
+    tc: tr('ELECTRIC HEATER — T&C VERIFICATION RECORD','ELECTRIC HEATER — BIÊN BẢN NGHIỆM THU T&C'),
+    airflow: tr('ELECTRIC HEATER — AIRFLOW BY HEAT BALANCE','ELECTRIC HEATER — LƯU LƯỢNG THEO CÂN BẰNG NHIỆT')
+  };
+  $('rTitle').textContent = titles[mode];
+
+  const doc = [
+    [tr('Project','Dự án'), $('docProject').value],
+    [tr('Tag','Mã thiết bị'), $('docTag').value],
+    [tr('Location','Vị trí'), $('docLoc').value],
+    [tr('Date','Ngày'), $('docDate').value]
+  ].filter(r => r[1]);
+  $('rDoc').innerHTML = doc.length
+    ? doc.map(r => `<b>${esc(r[0])}:</b> ${esc(r[1])}`).join(' &nbsp;|&nbsp; ')
+    : '&nbsp;';
+
+  $('rInputs').innerHTML = rows(tr('Input data','Dữ liệu đầu vào'), inputRows());
+  $('rResults').innerHTML = rows(tr('Results','Kết quả'), resultRows());
+  $('rVerdict').textContent = $('status').textContent;
+
+  // Only carry over findings that need action, capped to keep it to one page.
+  const notes = [...document.querySelectorAll('#flags .flag.bad, #flags .flag.warn')]
+    .slice(0, 3)
+    .map(f => `<p>— ${esc(f.textContent)}</p>`)
+    .join('');
+  $('rNotes').innerHTML = notes;
+
+  $('rBy1').textContent = `${tr('Tested by','Người thực hiện')}: ${$('docBy').value || ''}`;
+  $('rBy2').textContent = `${tr('Witnessed by','Người chứng kiến')}: ${$('docWit').value || ''}`;
+  $('rFoot').textContent = tr(
+    'Sensible heat only. ρ = Patm / (287.05 × T). Q = ṁ × Cp × ΔT.  •  EH Calculator v3.0',
+    'Chỉ tính nhiệt hiện. ρ = Patm / (287,05 × T). Q = ṁ × Cp × ΔT.  •  EH Calculator v3.0');
+}
+
+/* ---------- wiring ---------- */
+$('langBtn').onclick = () => { lang = lang === 'en' ? 'vi' : 'en'; setLanguage(); };
+$('sizingTab').onclick = () => setMode('sizing');
+$('temperatureTab').onclick = () => setMode('temperature');
+$('tcTab').onclick = () => setMode('tc');
+$('airflowTab').onclick = () => setMode('airflow');
+$('calculate').onclick = calc;
+$('printBtn').onclick = () => { buildReport(); window.print(); };
+
+$('swapBtn').onclick = () => {
+  const a = $('tin').value;
+  $('tin').value = $('tout').value;
+  $('tout').value = a;
+  calc();
+};
+
+$('shape').onchange = () => {
+  const round = $('shape').value === 'round';
+  $('widthBox').classList.toggle('hidden', round);
+  $('heightBox').classList.toggle('hidden', round);
+  $('diameterBox').classList.toggle('hidden', !round);
+  calc();
+};
+
+$('rhoMode').onchange = () => {
+  const auto = $('rhoMode').value === 'auto';
+  $('patmBox').classList.toggle('hidden', !auto);
+  $('rhoManualBox').classList.toggle('hidden', auto);
+  calc();
+};
+
+$('measurePoint').onchange = calc;
+$('phases').onchange = calc;
+
+$('useAirflow').onclick = () => {
+  const q = parseFloat($('calcAirflow').value);
+  if (Number.isFinite(q) && q > 0){ $('airflow').value = q.toFixed(0); calc(); }
+};
+
+document.querySelectorAll('input').forEach(el => el.addEventListener('input', calc));
+
+$('docDate').valueAsDate = new Date();
+setLanguage();
+setMode('sizing');
+</script>
+</body>
+</html>
